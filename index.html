@@ -133,6 +133,12 @@ header h1 svg{color:var(--accent);width:22px;height:22px}
 .hp .top span{font-size:.72rem;font-weight:700;white-space:nowrap}
 .hp .bar{height:6px;margin:7px 0 5px;background:var(--card2)}
 .hp em{font-style:normal;font-size:.72rem;color:var(--muted)}
+.placaRow{display:grid;grid-template-columns:1fr auto;gap:8px}
+.placaRow input{text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.placaRow .btn{margin:0;width:auto;padding:12px 18px}
+.placaRow .btn:disabled{opacity:.5}
+.ficha{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.ficha summary{cursor:pointer;font-weight:600;font-size:.92rem;color:var(--text)}
 .linkbtn{display:block;margin:8px auto 0;border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline}
 nav{background:rgba(25,32,42,.9)}
 .btn{background:var(--accent);color:#1c1200;box-shadow:none}
@@ -353,12 +359,36 @@ body.sheet-aberta .hdate{display:none}
   <section id="tab-ajustes" class="hidden">
     <div class="card">
       <h2>Moto</h2>
-      <label>Nome / modelo</label><input type="text" id="cfgNome">
+      <label for="cfgPlaca">Placa</label>
+      <div class="placaRow"><input type="text" id="cfgPlaca" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC1D23"><button class="btn" type="button" id="cfgBuscar">Buscar</button></div>
+      <p class="note" id="placaMsg">Digite a placa e toque em Buscar para preencher os dados da moto.</p>
+      <label>Nome / modelo</label><input type="text" id="cfgNome" list="listaModelos">
+      <datalist id="listaModelos"></datalist>
       <div class="row">
-        <div><label>Tanque (litros)</label><input type="number" id="cfgTanque" step="0.1" inputmode="decimal"></div>
+        <div><label>Ano</label><input type="text" id="cfgAno" inputmode="numeric" maxlength="9"></div>
+        <div><label>Cor</label><input type="text" id="cfgCor"></div>
+      </div>
+      <div class="row">
+        <div><label>Tanque (litros)</label><input type="number" id="cfgTanque" step="0.1" inputmode="decimal"><button type="button" class="linkbtn hidden" id="tanqueRef" style="margin:6px 0 0;text-align:left;color:var(--accent2)"></button></div>
         <div><label>Km inicial</label><input type="number" id="cfgKm0" inputmode="numeric"></div>
       </div>
       <p class="note">Km inicial: o km da moto quando você começou a usar o app (usado no custo por km).</p>
+      <details class="ficha" id="fichaBox">
+        <summary>Ficha técnica</summary>
+        <div class="row">
+          <div><label>Pneu dianteiro</label><input type="text" id="cfgPneuD"></div>
+          <div><label>Pneu traseiro</label><input type="text" id="cfgPneuT"></div>
+        </div>
+        <div class="row">
+          <div><label>Combustível</label><input type="text" id="cfgComb"></div>
+          <div><label>Potência</label><input type="text" id="cfgPot"></div>
+        </div>
+        <div class="row">
+          <div><label>Óleo (tipo e litros)</label><input type="text" id="cfgOleo" placeholder="ex.: 10W-30, 1 L"></div>
+          <div><label>Valor FIPE</label><input type="text" id="cfgFipe"></div>
+        </div>
+        <p class="note" id="fichaNota">Tanque e pneus vêm de uma tabela de referência dos modelos mais comuns. Confira no manual e corrija se precisar.</p>
+      </details>
       <div class="row">
         <div><label>Avisar se rodou mais de (km)</label><input type="number" id="cfgAlKm" inputmode="numeric" min="0"></div>
         <div><label>Avisar se o preço/L variar (%)</label><input type="number" id="cfgAlPreco" inputmode="numeric" min="0"></div>
@@ -1664,6 +1694,8 @@ $('#instalarBannerX').addEventListener('click', () => { try { localStorage.setIt
 // ---------- ajustes ----------
 function renderCfg(){
   $('#cfgNome').value = db.config.nome; $('#cfgTanque').value = db.config.tanque; $('#cfgKm0').value = db.config.km0;
+  CAMPOS_MOTO.forEach(([id, k]) => $('#' + id).value = db.config[k] || '');
+  $('#tanqueRef').classList.add('hidden');
   $('#cfgAlKm').value = db.config.alertaKm; $('#cfgAlPreco').value = db.config.alertaPreco;
   $('#cfgEmail').checked = !!db.config.emailSemanal;
   $('#cfgInt').innerHTML = '<div class="cfg"><span class="hh">Item</span><span class="hh">Km</span><span class="hh">Meses</span>' +
@@ -1678,10 +1710,115 @@ $('#cfgSalvar').addEventListener('click', () => {
   db.config.alertaKm = Number($('#cfgAlKm').value) || 0;
   db.config.alertaPreco = Number($('#cfgAlPreco').value) || 0;
   db.config.emailSemanal = $('#cfgEmail').checked;
+  CAMPOS_MOTO.forEach(([id, k]) => db.config[k] = $('#' + id).value.trim());
+  db.config.placa = normPlaca(db.config.placa);
   document.querySelectorAll('[data-int]').forEach(i => db.config.intervalos[i.dataset.int] = Number(i.value) || 0);
   document.querySelectorAll('[data-mes]').forEach(i => db.config.meses[i.dataset.mes] = Number(i.value) || 0);
   save(); render(); toast('Ajustes salvos ✓');
 });
+
+// ---------- placa e ficha da moto ----------
+// Consulta grátis da API FIPE (fipe.parallelum.com.br, sem chave, cerca de 5 consultas por mês por internet).
+// Tanque e pneus não vêm da placa: saem da tabela de referência abaixo (valores aproximados, editáveis).
+const CAMPOS_MOTO = [['cfgPlaca','placa'],['cfgAno','ano'],['cfgCor','cor'],['cfgPneuD','pneuD'],['cfgPneuT','pneuT'],
+  ['cfgComb','combustivel'],['cfgPot','potencia'],['cfgOleo','oleo'],['cfgFipe','fipe']];
+// [padrão do nome, nome, tanque L, pneu dianteiro, pneu traseiro]
+const FICHAS = [
+  [/FZ ?15|FAZER FZ/, 'Yamaha Fazer FZ15 150', 16, '100/80-17', '130/70-17'],
+  [/YS ?150|FAZER ?150/, 'Yamaha YS 150 Fazer', 15.7, '', ''],
+  [/FZ ?25|FAZER ?250|YS ?250/, 'Yamaha Fazer 250', 14, '100/80-17', '130/70-17'],
+  [/FACTOR ?150|YBR ?150/, 'Yamaha Factor 150', 15.7, '2.75-18', '90/90-18'],
+  [/FACTOR ?125|YBR ?125/, 'Yamaha Factor 125', 13, '2.75-18', '90/90-18'],
+  [/CROSSER/, 'Yamaha Crosser 150', 12, '90/90-19', '110/90-17'],
+  [/LANDER/, 'Yamaha Lander 250', 11, '80/90-21', '120/80-18'],
+  [/TENERE ?250|TÉNÉRÉ ?250/, 'Yamaha Ténéré 250', 16, '90/90-21', '120/80-18'],
+  [/NMAX/, 'Yamaha NMax 160', 6.6, '110/70-13', '130/70-13'],
+  [/NEO/, 'Yamaha Neo 125', 4, '80/80-14', '90/80-14'],
+  [/CRYPTON/, 'Yamaha Crypton 115', 4.2, '', '80/90-17'],
+  [/MT-? ?03/, 'Yamaha MT-03', 14, '110/70-17', '140/70-17'],
+  [/R3/, 'Yamaha YZF-R3', 14, '110/70-17', '140/70-17'],
+  [/MT-? ?07/, 'Yamaha MT-07', 14, '120/70-17', '180/55-17'],
+  [/CG ?160|CG160/, 'Honda CG 160', 16, '80/100-18', '100/80-18'],
+  [/CG ?150|CG150/, 'Honda CG 150', 15, '80/100-18', '90/90-18'],
+  [/CG ?125|CG125/, 'Honda CG 125', 14.6, '2.75-18', '90/90-18'],
+  [/BIZ ?125/, 'Honda Biz 125', 5.1, '60/100-17', '80/100-14'],
+  [/BIZ ?110|BIZ ?100/, 'Honda Biz 110i', 5.1, '60/100-17', '80/100-14'],
+  [/POP/, 'Honda Pop 110i', 4, '60/100-17', '80/100-14'],
+  [/BROS|NXR ?1[56]0/, 'Honda NXR 160 Bros', 12, '90/90-19', '110/90-17'],
+  [/XRE ?190/, 'Honda XRE 190', 13.5, '90/90-19', '110/90-17'],
+  [/XRE ?300/, 'Honda XRE 300', 14, '90/90-21', '120/80-18'],
+  [/CB ?250|TWISTER/, 'Honda CB 250F Twister', 16.5, '100/80-17', '130/70-17'],
+  [/CB ?300/, 'Honda CB 300R', 18, '110/70-17', '140/70-17'],
+  [/PCX/, 'Honda PCX 160', 8.1, '110/70-14', '130/70-13'],
+  [/ADV/, 'Honda ADV 150', 8, '110/80-14', '130/70-13'],
+  [/CB ?500/, 'Honda CB 500', 17, '120/70-17', '160/60-17'],
+  [/NC ?750/, 'Honda NC 750X', 14, '120/70-17', '160/60-17'],
+];
+const normPlaca = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+const placaValida = p => /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p);
+const maiusc = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+function acharFicha(...nomes){
+  const t = maiusc(nomes.filter(Boolean).join(' | '));
+  return FICHAS.find(f => f[0].test(t));
+}
+const titulo = t => String(t || '').toLowerCase().replace(/(^|[\s/-])([a-zà-ú])/g, (m, a, b) => a + b.toUpperCase());
+$('#listaModelos').innerHTML = FICHAS.map(f => `<option value="${esc(f[1])}">`).join('');
+$('#cfgPlaca').addEventListener('input', e => { const v = normPlaca(e.target.value); if (e.target.value !== v) e.target.value = v; });
+$('#cfgPlaca').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); buscarPlaca(); } });
+$('#cfgBuscar').addEventListener('click', buscarPlaca);
+// Ao trocar o nome à mão, completa a ficha pela tabela.
+$('#cfgNome').addEventListener('change', () => aplicarFicha(acharFicha($('#cfgNome').value), false));
+
+function aplicarFicha(f, avisar){
+  if (!f) return false;
+  if (!$('#cfgPneuD').value && f[3]) $('#cfgPneuD').value = f[3];
+  if (!$('#cfgPneuT').value && f[4]) $('#cfgPneuT').value = f[4];
+  const atual = Number($('#cfgTanque').value) || 0, ref = $('#tanqueRef');
+  if (!atual) { $('#cfgTanque').value = f[2]; ref.classList.add('hidden'); }
+  else if (Math.abs(atual - f[2]) >= 0.1) {
+    ref.textContent = `Usar ${num(f[2], f[2] % 1 ? 1 : 0)} L (ref.)`; ref.title = 'Referência para ' + f[1];
+    ref.onclick = () => { $('#cfgTanque').value = f[2]; ref.classList.add('hidden'); };
+    ref.classList.remove('hidden');
+  } else ref.classList.add('hidden');
+  if (avisar) $('#fichaBox').open = true;
+  return true;
+}
+
+async function buscarPlaca(){
+  const placa = normPlaca($('#cfgPlaca').value), msg = $('#placaMsg'), bt = $('#cfgBuscar');
+  $('#cfgPlaca').value = placa;
+  if (!placaValida(placa)) { msg.textContent = 'Placa inválida. Use o formato ABC1234 ou ABC1D23.'; return; }
+  if (!navigator.onLine) { msg.textContent = 'Sem internet. Tente de novo quando estiver conectado.'; return; }
+  bt.disabled = true; bt.textContent = '…'; msg.textContent = 'Consultando a placa…';
+  try {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 20000);
+    const r = await fetch('https://fipe.parallelum.com.br/api/v2/plates/' + placa, { headers: { accept: 'application/json' }, signal: ctl.signal });
+    clearTimeout(to);
+    const resta = r.headers.get('X-Plate-Quota-Remaining');
+    if (r.status === 404) { msg.textContent = 'Placa não encontrada. Preencha o modelo à mão (a lista sugere os mais comuns).'; return; }
+    if (r.status === 429 || r.status === 402 || r.status === 403) { msg.textContent = 'Acabaram as consultas grátis deste mês nesta internet. Tente no Wi-Fi ou no 4G, ou preencha à mão.'; return; }
+    if (!r.ok) throw new Error('http ' + r.status);
+    const v = await r.json();
+    if (!v || !v.model) { msg.textContent = 'A consulta não trouxe dados. Preencha o modelo à mão.'; return; }
+    const marca = titulo(v.brand), modelo = String(v.model || '').trim().split(/\s+/).map(w => /\d/.test(w) ? w.toUpperCase() : titulo(w)).join(' ');
+    const nome = (maiusc(modelo).startsWith(maiusc(v.brand)) ? '' : marca + ' ') + modelo;
+    $('#cfgNome').value = nome.trim();
+    if (v.year) $('#cfgAno').value = v.year;
+    if (v.color) $('#cfgCor').value = titulo(v.color);
+    if (v.fuel) $('#cfgComb').value = titulo(v.fuel);
+    if (v.power) $('#cfgPot').value = v.power;
+    const fp = Array.isArray(v.fipePrices) ? v.fipePrices : [];
+    if (fp[0] && fp[0].price) $('#cfgFipe').value = fp[0].price + (fp.length > 1 ? ' (' + fp[0].model + ')' : '');
+    const f = acharFicha(modelo, ...fp.map(x => x.model));
+    $('#cfgPneuD').value = ''; $('#cfgPneuT').value = '';
+    aplicarFicha(f, true);
+    msg.textContent = `Encontrada: ${nome.trim()}${v.year ? ' ' + v.year : ''}. ` +
+      (f ? 'Ficha completada pela tabela de referência. ' : 'Modelo fora da tabela: preencha tanque e pneus. ') +
+      'Confira e toque em Salvar ajustes.' + (resta !== null && resta !== '' ? ` (Consultas grátis restantes no mês: ${resta}.)` : '');
+  } catch (e) {
+    msg.textContent = 'Não foi possível consultar agora. Tente de novo em instantes ou preencha à mão.';
+  } finally { bt.disabled = false; bt.textContent = 'Buscar'; }
+}
 
 // ---------- backup ----------
 $('#exp').addEventListener('click', () => {
