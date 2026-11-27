@@ -80,6 +80,31 @@ textarea{min-height:70px;resize:vertical}
 .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
 .empty{color:var(--muted);text-align:center;padding:18px 0}
 .hidden{display:none!important}
+.vazio{display:block!important;text-align:center;padding:14px 4px 6px!important;border-top:0!important}
+.vazio .vzIco{width:52px;height:52px;margin:0 auto 10px;border-radius:16px;display:grid;place-items:center;color:var(--c,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 15%,transparent)}
+.vazio .vzIco svg{width:26px;height:26px}
+.vazio b{display:block;font-size:1rem;margin-bottom:4px}
+.vazio p{margin:0 auto;color:var(--muted);font-size:.88rem;max-width:300px}
+.vazio .btn{width:auto;display:inline-flex;margin-top:14px;padding:11px 18px}
+.tour{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;background:var(--bg);padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))}
+.tour.open{display:flex}
+.tourTopo{display:flex;justify-content:flex-end}
+.tourPular{border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:8px 4px}
+.tourSlide{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;max-width:420px;margin:0 auto;animation:tourIn .25s ease}
+@keyframes tourIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.tourIco{width:96px;height:96px;border-radius:28px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);margin-bottom:26px}
+.tourIco svg{width:46px;height:46px}
+.tourSlide h2{margin:0 0 10px;font-size:1.5rem;font-weight:800}
+.tourSlide p{margin:0;color:var(--muted);font-size:1rem;line-height:1.55}
+.tourPontos{display:flex;justify-content:center;gap:8px;margin:18px 0 4px}
+.tourPontos i{width:8px;height:8px;border-radius:99px;background:var(--card2);transition:width .2s,background .2s}
+.tourPontos i.on{width:24px;background:var(--accent)}
+.tour .btn{max-width:420px;margin:14px auto 0}
+.dicaVoz{position:relative;display:flex;gap:10px;align-items:flex-start;margin:10px 0 4px;padding:11px 12px;background:var(--accent-soft);border:1px solid rgba(255,122,26,.35);border-radius:14px;font-size:.88rem;line-height:1.4}
+.dicaVoz::before{content:"";position:absolute;top:-7px;right:62px;width:12px;height:12px;background:#2a1a0f;border-left:1px solid rgba(255,122,26,.35);border-top:1px solid rgba(255,122,26,.35);transform:rotate(45deg)}
+.dicaVoz span{flex:1}
+.dicaVoz b{color:var(--accent2)}
+.dicaVoz button{flex:none;border:0;background:var(--accent);color:#1a0d00;font:inherit;font-weight:700;font-size:.82rem;border-radius:10px;padding:7px 10px}
 .bar{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;border-radius:99px}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(10px);background:#fff;color:#111;font-weight:600;padding:10px 18px;border-radius:99px;font-size:.88rem;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:9;box-shadow:0 10px 30px rgba(0,0,0,.4)}
@@ -325,6 +350,7 @@ body.sheet-aberta .hdate{display:none}
   <!-- ANÁLISE -->
   <section id="tab-analise" class="hidden">
     <div class="seg" id="periodo"><button data-v="6">6 meses</button><button data-v="12" class="on">12 meses</button><button data-v="0">Tudo</button></div>
+    <div class="card hidden" id="aVazio"><ul class="list" id="aVazioL"></ul></div>
     <div class="grid" id="kpis"></div>
     <div class="card"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Este mês</h2><div id="aGauge"></div></div>
     <div class="card"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>Custo por km</h2><div id="aLinha"></div></div>
@@ -440,6 +466,7 @@ body.sheet-aberta .hdate{display:none}
 <!-- Folhas de registro rápido -->
 <div class="sheet" id="sheet-f" role="dialog" aria-modal="true" aria-labelledby="fTitle"><div class="sheet-card">
         <div class="sheet-head"><h3 id="fTitle">Novo abastecimento</h3><button type="button" class="icon-btn micHead" data-voz="f" aria-label="Falar"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button><button type="button" class="icon-btn" data-fechar="f" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="dicaVoz hidden" id="dicaVoz" role="note"><span>🎤 <b>Dica:</b> toque no microfone e fale um número por vez: <b>Litros</b>, depois <b>Valor</b> e <b>Odômetro</b>. Confira e toque em OK a cada etapa.</span><button type="button" id="dicaVozOk">Entendi</button></div>
     <div class="note vozInfo"></div>
     <form id="fForm">
       <input type="hidden" name="id">
@@ -551,6 +578,12 @@ body.sheet-aberta .hdate{display:none}
   <div class="vmBotoes"><button type="button" class="btn sec" id="avisoTrocaVer">Ver saúde</button><button type="button" class="btn" id="avisoTrocaOk">Ok</button></div>
 </div></div>
 <div class="instalarBanner hidden" id="instalarBanner"><span>📲 Instale o Motolog no celular</span><button type="button" class="btn" id="instalarBannerBtn">Instalar</button><button type="button" class="icon-btn" id="instalarBannerX" aria-label="Agora não">✕</button></div>
+<div class="tour" id="tour" role="dialog" aria-modal="true" aria-label="Boas-vindas">
+  <div class="tourTopo"><button type="button" class="tourPular" id="tourPular">Pular</button></div>
+  <div class="tourSlide" id="tourSlide"></div>
+  <div class="tourPontos" id="tourPontos"></div>
+  <button type="button" class="btn" id="tourProx">Próximo</button>
+</div>
 <div class="toast" id="toast"></div>
 <div id="relatorio"></div>
 
@@ -780,7 +813,8 @@ async function entrou(j){
     else adotar(r.db, r.rev);
   } catch { toast('Entrou, mas não consegui baixar os dados agora.'); }
   init(); toast('Olá' + (sync.nome ? ', ' + sync.nome.split(' ')[0] : '') + '! ✓');
-  abrir('abast'); abrirFolha('f');
+  const irAbastecer = () => { abrir('abast'); abrirFolha('f'); };
+  if (!tourVisto() && !temDados(db)) mostrarTour(irAbastecer); else irAbastecer();
 }
 async function sair(){
   if (sync.pendente && !confirm('Há alterações ainda não enviadas à planilha. Sair mesmo assim e perdê-las?')) return;
@@ -797,6 +831,15 @@ const dataBR = iso => iso ? iso.split('-').reverse().join('/') : '';
 const hoje = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ICV = {
+  f: '<path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  m: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  g: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11"/>',
+  a: '<path d="M3 3v18h18"/><path d="M8 17V9M13 17V5M18 17v-3"/>',
+};
+const COR = { f:'var(--fuel)', m:'var(--maint)', g:'var(--other)', a:'var(--accent)' };
+// Tela vazia que ensina: ícone, título, frase e um botão que já abre o registro certo.
+const vazioAcao = (ico, titulo, frase, botao, tipo, tag = 'li') => `<${tag} class="vazio" style="--c:${COR[ico]}"><div class="vzIco"><svg viewBox="0 0 24 24" aria-hidden="true">${ICV[ico]}</svg></div><b>${titulo}</b><p>${frase}</p>${botao ? `<button type="button" class="btn" data-novo="${tipo}">${botao}</button>` : ''}</${tag}>`;
 const ord = arr => [...arr].sort((a,b) => (b.data||'').localeCompare(a.data||'') || (b.hora||'').localeCompare(a.hora||'') || (b.km||0)-(a.km||0));
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),Math.max(2200, msg.length*55)); }
 
@@ -866,11 +909,18 @@ function abrirFolha(t, editando){
   const el = $('#sheet-' + t); el.classList.add('open'); document.body.classList.add('sheet-aberta');
   if (!folhaAberta){ try { history.pushState({ folha: t }, ''); } catch {} }
   folhaAberta = t;
-  if (t === 'f' && !editando) pegarGps();
+  if (t === 'f' && !editando){ pegarGps(); mostrarDicaVoz(); }
   if (t === 'm' && !editando) fmtMask(forms.m.km, kmAtual() || null);
   const primeiro = forms[t].querySelector(t === 'f' ? '[name=litros]' : t === 'm' ? '[name=servico]' : '[name=cat]');
   setTimeout(() => { try { primeiro.focus({ preventScroll: true }); } catch {} }, 60);
 }
+// Dica do ditado por voz: aparece só na primeira vez que abre o Abastecer, e some ao tocar em Entendi ou no microfone.
+const DICA_VOZ = 'motolog.dicaVoz';
+function mostrarDicaVoz(){
+  let vista = false; try { vista = localStorage.getItem(DICA_VOZ) === '1'; } catch {}
+  $('#dicaVoz').classList.toggle('hidden', vista || !Reconhecedor || $('#tour').classList.contains('open'));
+}
+function dispensarDicaVoz(){ try { localStorage.setItem(DICA_VOZ, '1'); } catch {} $('#dicaVoz').classList.add('hidden'); }
 function fecharFolha(semVoltar){
   if (!folhaAberta) return;
   const t = folhaAberta; folhaAberta = null;
@@ -885,7 +935,8 @@ window.addEventListener('popstate', () => {
 });
 document.addEventListener('click', e => {
   const f = e.target.closest('[data-fechar]'); if (f){ fecharFolha(); return; }
-  const n = e.target.closest('[data-novo]'); if (n){ abrirFolha(n.dataset.novo); return; }
+  const n = e.target.closest('[data-novo]'); if (n){ abrir(ABA_TIPO[n.dataset.novo]); abrirFolha(n.dataset.novo); return; }
+  if (e.target.closest('#dicaVozOk') || e.target.closest('.micHead[data-voz="f"]')) dispensarDicaVoz();
   const mh = e.target.closest('.micHead'); if (mh) iniciarVoz(mh.dataset.voz);
 });
 // ---------- render ----------
@@ -942,7 +993,7 @@ function render(){
   const barra = (rot, v, cor) => `<div style="margin:4px 0 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><i style="width:8px;height:8px;border-radius:50%;background:${cor}"></i>${rot}</span><b>${brl(v)}</b></div><div class="bar"><i style="width:${tot? (v/tot*100).toFixed(1):0}%;background:${cor}"></i></div></div>`;
   $('#totais').innerHTML = tot ? barra('Combustível', tF, 'var(--fuel)') + barra('Manutenção', tM, 'var(--maint)') + barra('Outros gastos', tG, 'var(--other)') +
     `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:8px"><span>Total</span><b>${brl(tot)}</b></div>`
-    : '<div class="empty">Nenhum gasto registrado ainda.</div>';
+    : vazioAcao('g', 'Ainda sem gastos', 'Os totais aparecem aqui assim que você registrar o primeiro abastecimento, manutenção ou gasto.', '', '', 'div');
 
   // Saúde da moto (km e tempo: vence o que chegar primeiro)
   const { saude, semReg } = calcSaude(km);
@@ -956,7 +1007,7 @@ function render(){
       <div class="bar"><i style="width:${Math.min(100, Math.max(2, h.fr*100)).toFixed(1)}%;background:${cor}"></i></div>
       <em>a cada ${iv} · última em ${dataBR(h.u.data)} com ${num(h.u.km)} km</em></div>`;
   }).join('') + (semReg.length ? `<p class="note">Sem registro ainda: ${semReg.map(esc).join(', ')}.</p>` : '')
-    : '<div class="empty">Registre uma manutenção (ex.: troca de óleo) para acompanhar a saúde da moto.</div>';
+    : vazioAcao('m', 'Acompanhe a saúde da moto', 'Registre a última troca de óleo (ou outra revisão) e o app mostra quanto falta para a próxima.', 'Registrar manutenção', 'm', 'div');
 
   // Alerta de consumo
   const al = alertaConsumo(map);
@@ -970,12 +1021,12 @@ function render(){
 
   // Últimos
   const ult = ord(todos).slice(0,5);
-  $('#ultimos').innerHTML = ult.length ? ult.map(x => item(x)).join('') : '<li class="empty" style="display:block">Nada por aqui ainda.</li>';
+  $('#ultimos').innerHTML = ult.length ? ult.map(x => item(x)).join('') : vazioAcao('f', 'Comece pelo primeiro abastecimento', 'Anote litros, valor e odômetro ao abastecer. Com dois tanques cheios o app já calcula seu consumo.', 'Registrar abastecimento', 'f');
 
   // Listas
-  $('#fList').innerHTML = db.abastecimentos.length ? ord(db.abastecimentos).map(a => item({...a, tipo:'f'}, map[a.id], true)).join('') : '<li class="empty" style="display:block">Nenhum abastecimento.</li>';
-  $('#mList').innerHTML = db.manutencoes.length ? ord(db.manutencoes).map(m => item({...m, tipo:'m'}, null, true)).join('') : '<li class="empty" style="display:block">Nenhuma manutenção.</li>';
-  $('#gList').innerHTML = db.gastos.length ? ord(db.gastos).map(g => item({...g, tipo:'g'}, null, true)).join('') : '<li class="empty" style="display:block">Nenhum gasto.</li>';
+  $('#fList').innerHTML = db.abastecimentos.length ? ord(db.abastecimentos).map(a => item({...a, tipo:'f'}, map[a.id], true)).join('') : vazioAcao('f', 'Nenhum abastecimento ainda', 'Registre o primeiro na próxima ida ao posto. Leva poucos segundos, e dá para ditar por voz.', 'Registrar primeiro abastecimento', 'f');
+  $('#mList').innerHTML = db.manutencoes.length ? ord(db.manutencoes).map(m => item({...m, tipo:'m'}, null, true)).join('') : vazioAcao('m', 'Nenhuma manutenção ainda', 'Anote a última troca de óleo, mesmo que antiga. Assim o app avisa quando estiver chegando a próxima.', 'Registrar manutenção', 'm');
+  $('#gList').innerHTML = db.gastos.length ? ord(db.gastos).map(g => item({...g, tipo:'g'}, null, true)).join('') : vazioAcao('g', 'Nenhum gasto ainda', 'Seguro, IPVA, lavagem, peças, multas… Tudo o que não é combustível nem oficina entra aqui.', 'Registrar gasto', 'g');
 }
 
 // ---------- datas ----------
@@ -1008,6 +1059,8 @@ function registros(){
 }
 function renderAnalise(kmAt){
   const regs = registros(), agora = new Date();
+  $('#aVazio').classList.toggle('hidden', regs.length > 0);
+  if (!regs.length) $('#aVazioL').innerHTML = vazioAcao('a', 'Sua análise aparece aqui', 'Gasto por mês, custo por km e comparação de postos são montados com os seus registros. Comece pelo próximo abastecimento.', 'Registrar abastecimento', 'f');
   const ini = per ? addMeses(new Date(agora.getFullYear(), agora.getMonth(), 1), -(per-1)) : null;
   const noPer = regs.filter(r => !ini || dt(r.data) >= ini);
   const total = noPer.reduce((s,r) => s + r.valor, 0);
@@ -1869,6 +1922,39 @@ for (const f of Object.values(forms)) ['fotoCam','fotoArq'].forEach((n, i, ns) =
   const a = f[n].files[0]; if (!a) return; f[ns[1-i]].value = '';
   f.querySelector('.fotoAtual').textContent = 'Foto pronta: vai junto ao salvar ✓';
 }));
+
+// ---------- boas-vindas: 3 telas no primeiro acesso de cada usuário ----------
+const TOUR = [
+  { ico:'f', t:'Abastecer em segundos', p:'Ao abastecer, digite ou dite <b>litros</b>, <b>valor</b> e <b>odômetro</b> e toque em Salvar. A data e a hora entram sozinhas.' },
+  { ico:'m', t:'Manutenção em dia', p:'Anote trocas de óleo, pneus e revisões. O app acompanha a quilometragem e avisa quando a próxima estiver chegando.' },
+  { ico:'a', t:'Veja quanto a moto custa', p:'Na <b>Análise</b> você vê consumo, gasto por mês, custo por km e qual posto rende mais.' },
+];
+let tourI = 0, tourFim = null;
+const tourChave = () => 'motolog.tour.' + (sync.email || '');
+function tourVisto(){ try { return localStorage.getItem(tourChave()) === '1'; } catch { return true; } }
+function mostrarTour(depois){
+  tourI = 0; tourFim = depois; $('#tour').classList.add('open'); pintarTour();
+}
+function pintarTour(){
+  const s = TOUR[tourI];
+  $('#tourSlide').innerHTML = `<div class="tourIco" style="--c:${COR[s.ico]}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICV[s.ico]}</svg></div><h2>${s.t}</h2><p>${s.p}</p>`;
+  $('#tourPontos').innerHTML = TOUR.map((_, i) => `<i class="${i === tourI ? 'on' : ''}"></i>`).join('');
+  $('#tourProx').textContent = tourI === TOUR.length - 1 ? 'Começar' : 'Próximo';
+  $('#tourPular').classList.toggle('hidden', tourI === TOUR.length - 1);
+}
+function fecharTour(){
+  try { localStorage.setItem(tourChave(), '1'); } catch {}
+  $('#tour').classList.remove('open');
+  const f = tourFim; tourFim = null; if (f) f();
+}
+$('#tourProx').addEventListener('click', () => { if (tourI < TOUR.length - 1){ tourI++; pintarTour(); } else fecharTour(); });
+$('#tourPular').addEventListener('click', fecharTour);
+// Deslizar para o lado também troca de tela.
+(() => { let x0 = null; const el = $('#tour');
+  el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  el.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (dx < -50 && tourI < TOUR.length - 1){ tourI++; pintarTour(); } else if (dx > 50 && tourI > 0){ tourI--; pintarTour(); } });
+})();
 
 function init(){ preencherServicos(); renderCfg(); renderSync(); ['f','m','g'].forEach(resetForm); render(); renderInstalar(); }
 load(); init();
